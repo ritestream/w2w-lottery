@@ -11,7 +11,10 @@ export class AppController {
   }
 
   @Get('winner')
-  getWinner(@Query('amount') amount: number): Promise<any> {
-    return this.appService.getWinner(amount);
+  getWinner(
+    @Query('amount') amount: number,
+    @Query('month') month: string,
+  ): Promise<any> {
+    return this.appService.getWinner(amount, month);
   }
 }
