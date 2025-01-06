@@ -9,7 +9,7 @@ export class AppService {
     return 'Hello World!';
   }
 
-  async getWinner(amount: number): Promise<any> {
+  async getWinner(amount: number, month: string): Promise<any> {
     try {
       if (amount <= 0) {
         throw new Error('Amount must be positive');
@@ -17,10 +17,7 @@ export class AppService {
       // get sum of ads_play_times for each address in the 2024-10 and 2024-11
       const adsRecord = await this.prisma.user_ads_records.findMany({
         where: {
-          created_at: {
-            gte: new Date('2024-10-01'),
-            lt: new Date('2024-12-01'),
-          },
+          month: month,
           win: false,
         },
       });
@@ -54,31 +51,28 @@ export class AppService {
       }
       //add winner history
       //update record flag as winned
-      const [winner_records, user_adds_records] =
-        await this.prisma.$transaction([
-          this.prisma.winner_records.create({
-            data: {
-              address: winner,
-              amount,
-              created_at: new Date(),
-              user_id: winnerUser.id,
-              month: '2024-11',
-            },
-          }),
-          this.prisma.user_ads_records.updateMany({
-            where: {
-              address: winner,
-              created_at: {
-                gte: new Date('2024-10-01'),
-                lt: new Date('2024-12-01'),
-              },
-              win: false,
-            },
-            data: {
-              win: true,
-            },
-          }),
-        ]);
+      const [winner_records] = await this.prisma.$transaction([
+        this.prisma.winner_records.create({
+          data: {
+            address: winner,
+            amount,
+            created_at: new Date(),
+            user_id: winnerUser.id,
+            month: month,
+          },
+        }),
+        this.prisma.user_ads_records.updateMany({
+          where: {
+            address: winner,
+            month: month,
+            win: false,
+            user_id: winnerUser.id,
+          },
+          data: {
+            win: true,
+          },
+        }),
+      ]);
       // return winner_records without id and user id and month;
       return {
         amount: winner_records.amount,
